@@ -14,7 +14,7 @@ st.set_page_config(
 # --- CSS INJECTION AESTHETIC PINK FLORAL (ENHANCED CONTRAST) ---
 st.markdown("""
 <style>
-/* Background app dengan warna pink pastel lembut dan pola bunga halus */
+/* Background app dengan warna pink pastel lembut */
 [data-testid="stAppViewContainer"] {
     background-color: #fff0f3;
     background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f48fb1' fill-opacity='0.18'%3E%3Cpath d='M40 30c-2.2 0-4 1.8-4 4 0 2.2 1.8 4 4 4s4-1.8 4-4c0-2.2-1.8-4-4-4zm0-10c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm-10 10c0-3.3-2.7-6-6-6s-6 2.7-6 6 2.7 6 6 6 6-2.7 6-6zm20 0c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6-6-2.7-6-6zm-10 10c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z'/%3E%3C/g%3E%3C/svg%3E");
@@ -23,94 +23,57 @@ st.markdown("""
 /* Sidebar estetik pink */
 [data-testid="stSidebar"] {
     background-color: #ffe6eb !important;
-    border-right: 2px solid #f8bbd0;
 }
 
 /* Judul Heading dengan warna Burgundy/Deep Pink */
 h1, h2, h3 {
     color: #880e4f !important;
-    font-family: 'Georgia', serif;
-    font-weight: 700;
 }
 
-/* Semua teks biasa, paragraf, label, dan radio button agar terlihat tegas & jelas */
+/* Semua teks biasa agar terlihat tegas */
 p, span, label, div, .stMarkdown {
     color: #4a0e17 !important;
     font-weight: 500;
 }
 
-/* Teks Radio Button di Sidebar */
-[data-testid="stRadio"] label p {
-    color: #5c061c !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-}
-
-/* Styling Input Box, Selectbox, & Text Area agar serasi (Background putih bersih) */
+/* Force Input Background dan Text Color agar tidak hitam/gelap */
 div[data-baseweb="select"] > div, 
 div[data-baseweb="input"] > div,
 input {
     background-color: #ffffff !important;
     color: #4a0e17 !important;
-    border-radius: 12px !important;
     border: 1.5px solid #f48fb1 !important;
+}
+
+/* Dropdown Menu Items */
+div[role="listbox"] {
+    background-color: #ffffff !important;
+}
+div[role="option"] {
+    color: #4a0e17 !important;
+    background-color: #ffffff !important;
 }
 
 /* File Uploader styling */
 [data-testid="stFileUploadDropzone"] {
     background-color: #ffffff !important;
     border: 2px dashed #f06292 !important;
-    border-radius: 15px !important;
 }
 [data-testid="stFileUploadDropzone"] span, 
 [data-testid="stFileUploadDropzone"] div {
     color: #880e4f !important;
 }
 
-/* Style tombol utama menjadi pink mencolok dengan efek hover */
+/* Tombol */
 .stButton>button {
     background: linear-gradient(135deg, #ff69b4, #e91e63) !important;
     color: white !important;
-    font-weight: bold !important;
-    font-size: 16px !important;
     border-radius: 25px !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3) !important;
-    transition: all 0.3s ease !important;
-    padding: 10px 24px !important;
-}
-.stButton>button:hover {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-    box-shadow: 0 6px 16px rgba(194, 24, 91, 0.4) !important;
-    transform: translateY(-2px);
-}
-.stButton>button p {
-    color: white !important;
 }
 
-/* Style alert/warning box agar kontrasnya bagus */
-[data-testid="stAlert"] {
-    background-color: #fff3f5 !important;
-    border: 1px solid #f48fb1 !important;
-    border-radius: 12px !important;
-}
-[data-testid="stAlert"] p {
-    color: #880e4f !important;
-}
-
-/* Style container form dengan efek Glassmorphism */
-div[data-testid="stVerticalBlock"] > div[style*="border"] {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(8px);
-    border: 2px solid #f8bbd0 !important;
-    border-radius: 18px !important;
-    padding: 20px !important;
-    box-shadow: 0 8px 20px rgba(244, 143, 177, 0.15) !important;
-}
-
-/* Header Streamlit transparan */
-[data-testid="stHeader"] {
-    background: transparent;
+/* Fix untuk teks yang masih gelap di dalam area tertentu */
+div[data-testid="stMarkdownContainer"] p {
+    color: #4a0e17 !important;
 }
 </style>
 """, unsafe_allow_html=True)
