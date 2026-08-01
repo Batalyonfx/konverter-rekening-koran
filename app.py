@@ -5,7 +5,7 @@ import io
 import time
 
 st.set_page_config(
-    page_title="Sedot Rekening Koran to Excel",
+    page_title="Rekening Koran PDF to Excel",
     page_icon="🔎",
     layout="wide"
 )
