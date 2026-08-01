@@ -164,7 +164,4 @@ elif menu == "▶︎ Pilih Sampel / Panduan":
 
 elif menu == "▶︎ Tentang":
     st.title("Tentang Aplikasi")
-    st.write("Aplikasi ini dibuat menggunakan **Streamlit** dan **pdfplumber**.")
-    st.write("Dibuat khusus untuk membantu akuntan, admin keuangan, atau personal untuk memindahkan mutasi rekening koran dari bentuk PDF (yang sulit diedit) menjadi file Excel yang siap diolah kembali untuk rekonsiliasi.")
-    
-    st.info("Keamanan: Proses berjalan di sisi memori server saat itu juga. File PDF yang diupload tidak disimpan secara permanen di storage server.")
+    st.markdown("<h3>Dibuat dengan ❤️ oleh Griffin dan Septiana</h3>", unsafe_allow_html=True)
