@@ -94,8 +94,69 @@ def extract_data_from_pdf(pdf_file, bank_choice, password=None):
         if not all_transactions:
              return None, "Tidak ada data transaksi yang ditemukan. Pastikan format PDF benar (bukan hasil scan)."
 
-        # Buat DataFrame dari hasil yang sudah rapi
-        df = pd.DataFrame(all_transactions)
+        # 5. POST-PROCESSING: Memisahkan Kolom Mutasi & Saldo menjadi Debit, Kredit, Saldo
+        final_transactions = []
+        for trx in all_transactions:
+            tanggal = trx["Tanggal"]
+            keterangan = trx["Keterangan"]
+            mutasi_saldo = trx["Mutasi & Saldo"]
+            
+            debit = ""
+            kredit = ""
+            saldo = ""
+            
+            parts = mutasi_saldo.split()
+            
+            # Mengelompokkan angka dan kode (DB/CR)
+            numbers = []
+            is_db = False
+            is_cr = False
+            
+            for p in parts:
+                if p in ['DB', 'D', 'Dr']:
+                    is_db = True
+                elif p in ['CR', 'C', 'Cr']:
+                    is_cr = True
+                elif re.search(r'\d', p) and ('.' in p or ',' in p):
+                    numbers.append(p)
+                    
+            # Menentukan angka Mutasi (Debit/Kredit) dan angka Saldo akhir
+            if len(numbers) >= 2:
+                mutasi = numbers[0]
+                saldo = numbers[-1]
+            elif len(numbers) == 1:
+                mutasi = numbers[0]
+                
+                # Coba cari saldo yang mungkin jatuh ke baris terakhir Keterangan
+                ket_lines = keterangan.split('\n')
+                last_ket = ket_lines[-1].strip() if ket_lines else ""
+                
+                # Cek apakah baris terakhir Keterangan murni berupa angka saldo
+                if re.match(r'^-?[\d\.,]+-?$', last_ket) and ('.' in last_ket or ',' in last_ket):
+                    saldo = last_ket
+                    keterangan = "\n".join(ket_lines[:-1]) # Hapus saldo dari keterangan agar bersih
+            else:
+                mutasi = ""
+                
+            # Logika Penempatan Debit atau Kredit
+            if is_db:
+                debit = mutasi
+            elif is_cr:
+                kredit = mutasi
+            elif mutasi: 
+                # Jika tidak ada kode DB/CR (biasanya terjadi di BCA), defaultnya adalah uang masuk (Kredit)
+                kredit = mutasi
+                
+            final_transactions.append({
+                "Tanggal": tanggal,
+                "Keterangan": keterangan.strip(),
+                "Nilai Debit": debit,
+                "Nilai Kredit": kredit,
+                "Saldo": saldo
+            })
+
+        # Buat DataFrame dari hasil yang sudah dipisah kolomnya
+        df = pd.DataFrame(final_transactions)
         return df, None
 
     except pdfplumber.password.PasswordError:
