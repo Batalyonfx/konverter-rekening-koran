@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import pdfplumber
 import io
+import re
 
 st.set_page_config(
     page_title="Sedot Rekening Koran",
@@ -12,13 +13,13 @@ st.set_page_config(
 
 def extract_data_from_pdf(pdf_file, bank_choice, password=None):
     """
-    Fungsi inti untuk membaca PDF dan mengubahnya menjadi DataFrame Pandas.
-    Termasuk sistem pembersihan data otomatis.
+    Fungsi inti membaca PDF dengan pendekatan Text-Regex (Line by Line).
+    Sangat ampuh untuk mengatasi tabel borderless, teks berantakan, 
+    dan spasi berlebih pada rekening koran (BCA/Mandiri).
     """
-    all_data = []
+    all_transactions = []
     
     try:
-        # Membuka PDF, menggunakan password jika diberikan
         kwargs = {}
         if password:
             kwargs['password'] = password
@@ -26,61 +27,75 @@ def extract_data_from_pdf(pdf_file, bank_choice, password=None):
         with pdfplumber.open(pdf_file, **kwargs) as pdf:
             for page_num, page in enumerate(pdf.pages):
                 
-                # PERBAIKAN UTAMA: Gunakan strategi "text" sebagai PRIORITAS.
-                # Karena mayoritas rekening koran (seperti BCA, Mandiri) borderless.
-                tables = page.extract_tables(table_settings={
-                    "vertical_strategy": "text",
-                    "horizontal_strategy": "text",
-                    "snap_tolerance": 3,
-                })
+                # Ekstrak seluruh teks mentah di halaman tersebut
+                text = page.extract_text()
+                if not text: continue
+                    
+                lines = text.split('\n')
+                current_trx = None
                 
-                # Fallback: Jika "text" gagal total, coba pakai "lines" (garis)
-                if not tables:
-                     tables = page.extract_tables(table_settings={
-                        "vertical_strategy": "lines",
-                        "horizontal_strategy": "lines",
-                    })
-
-                if tables:
-                    for table in tables:
-                        for row in table:
-                            # 1. CLEANING: Rapatkan data ke kiri (hilangkan None di tengah)
-                            # Ini mengatasi masalah "staircase effect" / tangga
-                            cleaned_row = [str(cell).strip() for cell in row if cell is not None and str(cell).strip() != '']
+                for line in lines:
+                    line = line.strip()
+                    if not line: continue
+                        
+                    # 1. FILTERING: Abaikan baris header/footer (seperti alamat, "BANDUNG 4", "INDONESIA")
+                    lower_line = line.lower()
+                    if any(keyword in lower_line for keyword in [
+                        "halaman", "lanjutan", "saldo", "mutasi", "keterangan", 
+                        "cabang", "tanggal", "bandung", "indonesia", "rekening ini", "mata uang"
+                    ]):
+                        continue
+                        
+                    # 2. DETEKSI TRANSAKSI BARU: Cek apakah baris diawali TANGGAL (Pola: DD/MM atau DD/MM/YYYY)
+                    date_match = re.match(r'^(\d{2}[/-]\d{2}(?:[/-]\d{2,4})?)\s+(.*)', line)
+                    
+                    if date_match:
+                        # Simpan transaksi sebelumnya (jika ada) sebelum memulai yang baru
+                        if current_trx:
+                            all_transactions.append(current_trx)
                             
-                            # Jika baris tidak kosong setelah dibersihkan
-                            if cleaned_row:
-                                # 2. FILTERING HEADER: Abaikan baris yang berisi kata-kata header bawaan PDF
-                                # Kita gabungkan semua teks di baris menjadi satu string (lowercase) untuk dicek
-                                row_text = "".join(cleaned_row).lower()
+                        date_str = date_match.group(1)
+                        rest_of_line = date_match.group(2)
+                        
+                        # 3. PEMISAHAN KETERANGAN & NOMINAL (Cari angka uang dari belakang kalimat)
+                        parts = rest_of_line.split()
+                        keterangan_parts = []
+                        nominal_parts = []
+                        
+                        for part in reversed(parts):
+                            # Deteksi apakah ini angka nominal (ada digit & titik/koma) atau kode mutasi (DB/CR/dll)
+                            is_money = re.search(r'\d', part) and ('.' in part or ',' in part)
+                            is_code = part in ['DB', 'CR', 'D', 'C', 'Dr', 'Cr']
+                            
+                            if is_money or is_code:
+                                nominal_parts.insert(0, part)
+                            else:
+                                keterangan_parts.insert(0, part)
+                                break # Berhenti ketika ketemu teks huruf biasa
                                 
-                                # Daftar kata kunci header yang sering muncul dan mengganggu
-                                header_keywords = ["tanggal", "keterangan", "saldo", "mutasi", "cabang", "tarikan", "setoran"]
-                                
-                                # Jika baris ini BUKAN header, masukkan ke all_data
-                                if not any(keyword in row_text for keyword in header_keywords):
-                                     all_data.append(cleaned_row)
-                                     
-        if not all_data:
-             return None, "Tidak ada data transaksi yang ditemukan. Pastikan format PDF benar atau coba cek manual filenya."
+                        # Gabungkan semua sisa part menjadi kalimat keterangan yang rapi
+                        idx_sisa = len(parts) - len(nominal_parts) - len(keterangan_parts)
+                        keterangan_fix = " ".join(parts[:idx_sisa] + keterangan_parts)
+                        nominal_fix = " ".join(nominal_parts)
+                        
+                        current_trx = {
+                            "Tanggal": date_str,
+                            "Keterangan": keterangan_fix,
+                            "Mutasi & Saldo": nominal_fix
+                        }
+                    elif current_trx:
+                        # 4. GABUNGKAN BARIS MULTI-LINE: Jika tidak diawali tanggal, berarti ini lanjutan Keterangan
+                        current_trx["Keterangan"] += "\n" + line
+                        
+                # Simpan transaksi terakhir yang terbaca di halaman tersebut
+                if current_trx:
+                    all_transactions.append(current_trx)
 
-        # Membuat DataFrame dari list data yang sudah bersih
-        df = pd.DataFrame(all_data)
-        
-        # 3. INJECT HEADER RAPI: Menyesuaikan jumlah kolom hasil ekstraksi
-        num_columns = len(df.columns)
-        
-        # Contoh sederhana penetapan header (Bisa disesuaikan lebih lanjut per bank nanti)
-        if num_columns == 4:
-            df.columns = ["Tanggal", "Keterangan", "Mutasi", "Saldo"]
-        elif num_columns == 5:
-             df.columns = ["Tanggal", "Keterangan", "Cabang", "Mutasi", "Saldo"]
-        elif num_columns == 6:
-             df.columns = ["Tanggal", "Keterangan", "Cabang", "Debet", "Kredit", "Saldo"]
-        else:
-            # Jika jumlah kolom aneh, biarkan pakai angka, tapi beri prefix "Kolom_"
-            df.columns = [f"Kolom_{i}" for i in range(num_columns)]
+        if not all_transactions:
+             return None, "Tidak ada data transaksi yang ditemukan. Pastikan format PDF benar (bukan hasil scan)."
 
+        # Buat DataFrame dari hasil yang sudah rapi
+        df = pd.DataFrame(all_transactions)
         return df, None
 
     except pdfplumber.password.PasswordError:
