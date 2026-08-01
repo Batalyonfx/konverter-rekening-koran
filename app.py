@@ -5,7 +5,7 @@ import io
 import time
 
 st.set_page_config(
-    page_title="Rekening Koran PDF to Excel",
+    page_title="Sedot Rekening Koran to Excel",
     page_icon="🔎",
     layout="wide"
 )
@@ -68,6 +68,62 @@ def extract_data_from_pdf(pdf_file, bank_choice, password):
                              
         if all_data:
             df = pd.DataFrame(all_data)
+            
+            # --- MULAI PROSES CLEANING DATA ---
+            # 1. Ganti None dan NaN menjadi string kosong
+            df = df.fillna("")
+            df = df.astype(str)
+            
+            # 2. Hapus spasi berlebih di awal/akhir teks
+            for col in df.columns:
+                df[col] = df[col].str.strip()
+            
+            # 3. Geser sel yang ada isinya ke kiri (mengatasi misalign/None di tengah)
+            def shift_left(row):
+                valid_data = [val for val in row if val != ""]
+                valid_data.extend([""] * (len(row) - len(valid_data)))
+                return pd.Series(valid_data)
+                
+            df = df.apply(shift_left, axis=1)
+            
+            # 4. Deteksi dan hapus baris "Header" bawaan PDF yang berulang
+            header_keywords = ['TANGGAL', 'KETERANGAN', 'MUTASI', 'SALDO', 'CBG', 'CABANG', 'DEBET', 'KREDIT', 'URAIAN']
+            def is_header(row):
+                text = ' '.join(row).upper()
+                return sum(1 for kw in header_keywords if kw in text) >= 2
+                
+            mask = df.apply(is_header, axis=1)
+            df = df[~mask].copy()
+            
+            # 5. Hapus baris yang kosong semua setelah digeser
+            df = df[df.apply(lambda row: "".join(row) != "", axis=1)]
+            
+            # 6. Jika df kosong setelah dibersihkan
+            if df.empty:
+                return None, "Tidak ada data transaksi yang ditemukan. (Hanya terdeteksi header/teks kosong)."
+            
+            # 7. Tambahkan header kustom agar rapi di preview dan excel
+            current_cols = len(df.columns)
+            expected_cols = []
+            if bank_choice == "BCA":
+                expected_cols = ["Tanggal", "Keterangan", "Cabang", "Mutasi", "Saldo"]
+            elif bank_choice == "Bank Mandiri":
+                expected_cols = ["Tanggal", "Keterangan", "Referensi", "Debet", "Kredit", "Saldo"]
+            elif bank_choice == "BNI":
+                expected_cols = ["Tanggal", "Uraian", "Mutasi", "Saldo"]
+            elif bank_choice == "BRI":
+                expected_cols = ["Tanggal", "Transaksi", "Debet", "Kredit", "Saldo"]
+            
+            if expected_cols:
+                if current_cols <= len(expected_cols):
+                    df.columns = expected_cols[:current_cols]
+                else:
+                    cols = expected_cols + [f"Kolom_{i+1}" for i in range(current_cols - len(expected_cols))]
+                    df.columns = cols
+                    
+            df.reset_index(drop=True, inplace=True)
+            # --- AKHIR PROSES CLEANING ---
+            
             return df, None
         else:
             return None, "Tidak ada data tabel yang terdeteksi di dalam PDF."
