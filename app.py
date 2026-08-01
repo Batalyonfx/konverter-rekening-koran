@@ -5,13 +5,65 @@ import io
 import re
 
 st.set_page_config(
-    page_title="Sedot Rekening Koran",
-    page_icon="🏦",
+    page_title="Convert Rekening Koran PDF",
+    page_icon="🌸",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-def extract_data_from_pdf(pdf_file, bank_choice, password=None):
+# --- CSS INJECTION AESTHETIC PINK FLORAL ---
+st.markdown("""
+<style>
+/* Background app dengan warna pink pastel dan pattern bunga/kelopak tipis */
+[data-testid="stAppViewContainer"] {
+    background-color: #fff0f5; /* LavenderBlush */
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffb6c1' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Sidebar estetik pink */
+[data-testid="stSidebar"] {
+    background-color: #ffe4e1; /* MistyRose */
+    border-right: 3px solid #ffb6c1;
+}
+
+/* Mengubah warna teks judul menjadi pink gelap yang elegan */
+h1, h2, h3 {
+    color: #c2185b !important;
+    font-family: 'Georgia', serif;
+}
+
+/* Style tombol utama menjadi pink mencolok dengan efek hover */
+.stButton>button {
+    background-color: #ff69b4 !important; /* HotPink */
+    color: white !important;
+    border-radius: 30px !important;
+    border: none !important;
+    box-shadow: 0 4px 6px rgba(255, 105, 180, 0.4) !important;
+    transition: all 0.3s ease;
+}
+.stButton>button:hover {
+    background-color: #ff1493 !important; /* DeepPink */
+    box-shadow: 0 6px 12px rgba(255, 20, 147, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+/* Style kotak kontainer agar tampak transparan elegan (Glassmorphism ringan) */
+div[data-testid="stVerticalBlock"] > div[style*="border"] {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(5px);
+    border: 2px solid #ffb6c1 !important;
+    border-radius: 15px !important;
+}
+
+/* Mengganti header default Streamlit agar transparan */
+[data-testid="stHeader"] {
+    background: transparent;
+}
+</style>
+""", unsafe_allow_html=True)
+# -------------------------------------------
+
+def clean_currency(text):
     """
     Fungsi inti membaca PDF dengan pendekatan Text-Regex (Line by Line).
     Sangat ampuh untuk mengatasi tabel borderless, teks berantakan, 
@@ -185,15 +237,15 @@ def convert_df_to_excel(df):
             
     return output.getvalue()
 
-st.sidebar.title("Navigasi")
+st.sidebar.title("🌸 Navigasi")
 menu = st.sidebar.radio(
     "Pilih Menu",
-    ["▶︎ Sedot Rekening Koran", "▶︎ Pilih Sampel / Panduan", "▶︎ Tentang"]
+    ["🌷 Convert Rekening", "📖 Pilih Sampel / Panduan", "💌 Tentang"]
 )
 
-if menu == "▶︎ Sedot Rekening Koran":
-    st.title("🏦 Rekening Koran Scrape Tools")
-    st.markdown("Aplikasi web untuk mengubah file PDF e-Statement / Rekening Koran menjadi format Excel (.xlsx) dengan mudah.")
+if menu == "🌷 Convert Rekening":
+    st.title("🌸 Convert Rekening Koran PDF 🌸")
+    st.markdown("Aplikasi web estetik untuk mengubah file PDF e-Statement / Rekening Koran menjadi format Excel (.xlsx) dengan mudah. 🌺✨")
     
     st.warning("🔒 **Privasi Terjamin:** Data Tidak Akan Disimpan Dalam Aplikasi Setelah Selesai Konversi.")
 
@@ -265,11 +317,11 @@ elif menu == "▶︎ Pilih Sampel / Panduan":
     - Format tabel setiap bank mungkin berbeda. Jika hasil ekstraksi kurang rapi, Anda mungkin perlu melakukan sedikit penyesuaian manual di dalam file Excel-nya.
     """)
 
-elif menu == "▶︎ Tentang":
-    st.title("Tentang Aplikasi")
+elif menu == "💌 Tentang":
+    st.title("Tentang Aplikasi 💮")
     
     st.markdown("""
-    <div style='text-align: center; margin-top: 50px; padding: 30px; background-color: #f0f2f6; border-radius: 10px;'>
-        <h2>Dibuat dengan ❤️ oleh Griffin dan Septiana</h2>
+    <div style='text-align: center; margin-top: 50px; padding: 30px; background-color: rgba(255, 182, 193, 0.4); border-radius: 15px; border: 2px solid #ffb6c1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);'>
+        <h2 style='color: #c2185b;'>Dibuat dengan ❤️ oleh Griffin dan Septiana 🌷</h2>
     </div>
     """, unsafe_allow_html=True)
